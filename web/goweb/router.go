@@ -1,5 +1,11 @@
 package goweb
 
+import (
+	"net/http"
+
+	"log"
+)
+
 type router struct {
 	handlers map[string]HandlerFunc
 }
@@ -12,6 +18,7 @@ func newRouter() *router {
 
 func (r *router) addRouter(method string, url string, handler HandlerFunc) {
 	key := method + url
+	log.Printf("router: %s - %s", method, url)
 	r.handlers[key] = handler
 }
 
@@ -21,6 +28,6 @@ func (r *router) handle(c *Context) {
 	if handler, ok := r.handlers[key]; ok {
 		handler(c)
 	} else {
-		c.String("404 not found")
+		c.String(http.StatusOK, "404 not found")
 	}
 }
