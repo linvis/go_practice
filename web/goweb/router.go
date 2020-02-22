@@ -33,6 +33,8 @@ func (r *router) handle(c *Context) {
 		return
 	}
 
+	c.ParamMap = n.param
+
 	for _, handler := range n.handlers {
 		handler(c)
 	}

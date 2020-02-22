@@ -1,6 +1,9 @@
 package goweb
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type node struct {
 	path string
@@ -26,24 +29,69 @@ func longestCommonPrefix(pattern, path string) int {
 	return i
 }
 
+func findWildcard(path string) (string, int, bool) {
+	valid := false
+
+	for i, c := range path {
+		if c != ':' && c != '*' {
+			continue
+		}
+
+		valid = true
+		for end := i+1; end < len(path); end++ {
+			if path[end] == '/' {
+				return path[i:end], i, valid
+			}
+			if path[end] == '*' || path[end] == ':' {
+				return "", i, false
+			}
+		}
+
+		return path[i:], i, valid
+	}
+
+	return "", 0, false
+}
+
 func (n *node) insertChild(path string, handlers HandlerChain) {
-	if len(n.path) == 0 {
+
+	if (len(n.path)) != 0 {
+		child := &node{}
+		n.children = append(n.children, child)
+		n = child
+	}
+
+	wild, idx, valid := findWildcard(path)
+	if !valid {
 		n.path = path
 		n.isWild = false
 		n.children = []*node{}
 		n.handlers = handlers
 		n.isEnd = true
-	} else {
-		child := node{
-			path: path,
-			isWild: false,
-			isEnd: true,
-			children: []*node{},
-			handlers: handlers,
-		}
-
-		n.children = append(n.children, &child)
+		return
 	}
+
+	n.path = path[:idx]
+	n.children = []*node{}
+
+	child := &node{
+		path : wild,
+		children : []*node{},
+		isWild: true,
+	}
+	n.children = append(n.children, child)
+	n = child
+
+	child = &node{
+		path: path[idx+len(wild):],
+		children : []*node{},
+		isEnd: true,
+		handlers: handlers,
+	}
+	n.children = append(n.children, child)
+	n = child
+
+	return
 }
 
 func (n *node) insert(path string, handlers HandlerChain) {
@@ -85,7 +133,22 @@ func (n *node) insert(path string, handlers HandlerChain) {
 	}
 }
 
-func (n *node) search(path string) *node {
+type nodeInfo struct {
+	handlers HandlerChain
+	param map[string]string
+}
+
+func (n *node) search(path string) *nodeInfo {
+
+	param := strings.Split(path, "/")[0]
+	paramMap := make(map[string]string, 0)
+
+	if n.isWild && len(param) > 0 {
+		path = path[len(param):]
+		paramMap[n.path[1:]] = param
+		goto LOOP
+	}
+
 	if len(n.path) > len(path) {
 		return nil
 	}
@@ -97,13 +160,21 @@ func (n *node) search(path string) *node {
 
 	path = path[len(n.path):]
 	if len(path) <= 0 && n.isEnd {
-		return n
+		return &nodeInfo{
+			handlers: n.handlers,
+			param: paramMap,
+		}
 	}
 
+LOOP:
 	for _, child := range n.children {
-		ans := child.search(path)
-		if ans != nil {
-			return ans
+		info := child.search(path)
+		if info != nil {
+			for k, v := range paramMap {
+				info.param[k] = v
+			}
+
+			return info
 		}
 	}
 
