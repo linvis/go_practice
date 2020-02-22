@@ -5,6 +5,7 @@ import (
 )
 
 type HandlerFunc func(*Context)
+type HandlerChain []HandlerFunc
 
 type Engine struct {
 	ctx    *Context

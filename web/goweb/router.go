@@ -1,33 +1,39 @@
 package goweb
 
 import (
-	"net/http"
-
 	"log"
 )
 
 type router struct {
-	handlers map[string]HandlerFunc
+	tree map[string]*node
 }
 
 func newRouter() *router {
-	return &router{
-		handlers: make(map[string]HandlerFunc),
-	}
+	r := &router{}
+	r.tree = make(map[string]*node)
+	r.tree["GET"] = initTree()
+	r.tree["POST"] = initTree()
+	r.tree["PUT"] = initTree()
+	r.tree["DELETE"] = initTree()
+
+	return r
 }
 
-func (r *router) addRouter(method string, url string, handler HandlerFunc) {
-	key := method + url
-	log.Printf("router: %s - %s", method, url)
-	r.handlers[key] = handler
+func (r *router) addRouter(method string, path string, handler ...HandlerFunc) {
+	log.Printf("router: %s - %s", method, path)
+
+	r.tree[method].insert(path, handler)
 }
 
 func (r *router) handle(c *Context) {
-	key := c.Method + c.Path
 
-	if handler, ok := r.handlers[key]; ok {
+	n := r.tree[c.Method].search(c.Path)
+	if n == nil {
+		log.Printf("no path")
+		return
+	}
+
+	for _, handler := range n.handlers {
 		handler(c)
-	} else {
-		c.String(http.StatusOK, "404 not found")
 	}
 }
