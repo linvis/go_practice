@@ -1,9 +1,5 @@
 package goweb
 
-import (
-	"log"
-)
-
 type router struct {
 	tree map[string]*node
 }
@@ -20,7 +16,7 @@ func newRouter() *router {
 }
 
 func (r *router) addRouter(method string, path string, handlers HandlerChain) {
-	log.Printf("router: %s - %s", method, path)
+	// log.Printf("router: %s - %s", method, path)
 
 	r.tree[method].insert(path, handlers)
 }

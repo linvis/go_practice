@@ -192,8 +192,16 @@ func (n *node) search(path string) *nodeInfo {
 		if pattern[0] == ':' {
 			paramMap[pattern[1:]] = param
 			path = path[len(param):]
+
+			if len(path) <= 0 {
+				return &nodeInfo{
+					handlers: n.handlers,
+					param:    paramMap,
+				}
+			}
 		} else if pattern[0] == '*' {
 			paramMap[pattern[1:]] = path
+
 			if n.isEnd {
 				return &nodeInfo{
 					handlers: n.handlers,

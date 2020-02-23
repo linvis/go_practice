@@ -41,6 +41,27 @@ func (group *RouterGroup) GET(path string, handlers ...HandlerFunc) {
 	group.engine.router.addRouter("GET", path, handlers)
 }
 
+func (group *RouterGroup) POST(path string, handlers ...HandlerFunc) {
+	path = group.combineAbsPath(path)
+	handlers = group.combineHandlers(handlers)
+
+	group.engine.router.addRouter("POST", path, handlers)
+}
+
+func (group *RouterGroup) PUT(path string, handlers ...HandlerFunc) {
+	path = group.combineAbsPath(path)
+	handlers = group.combineHandlers(handlers)
+
+	group.engine.router.addRouter("PUT", path, handlers)
+}
+
+func (group *RouterGroup) DELETE(path string, handlers ...HandlerFunc) {
+	path = group.combineAbsPath(path)
+	handlers = group.combineHandlers(handlers)
+
+	group.engine.router.addRouter("GET", path, handlers)
+}
+
 func (group *RouterGroup) Use(handlers ...HandlerFunc) {
 	group.Handlers = append(group.Handlers, handlers...)
 }
