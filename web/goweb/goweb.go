@@ -8,18 +8,32 @@ type HandlerFunc func(*Context)
 type HandlerChain []HandlerFunc
 
 type Engine struct {
+	RouterGroup
+
 	ctx    *Context
 	router *router
 }
 
 func New() *Engine {
-	return &Engine{
+	engine := &Engine{
+		RouterGroup: RouterGroup{
+			Base:     "/",
+			Handlers: nil,
+		},
 		router: newRouter(),
 	}
+
+	engine.RouterGroup.engine = engine
+
+	return engine
 }
 
-func (engine *Engine) GET(pattern string, handler HandlerFunc) {
-	engine.router.addRouter("GET", pattern, handler)
+func (engine *Engine) Group(path string, handlers ...HandlerFunc) *RouterGroup {
+	return &RouterGroup{
+		Base:     path,
+		Handlers: handlers,
+		engine:   engine,
+	}
 }
 
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {

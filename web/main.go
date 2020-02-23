@@ -39,5 +39,12 @@ func main() {
 	engine.GET("/html", html)
 	engine.GET("/getfile/*file", getFile)
 
+	v1 := engine.Group("/v1", func(c *goweb.Context) {
+		c.String(http.StatusOK, "v1 middleware")
+	})
+	v1.GET("/v2", func(c *goweb.Context) {
+		c.String(http.StatusOK, "v2 callback")
+	})
+
 	engine.Run(":4000")
 }

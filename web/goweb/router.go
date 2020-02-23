@@ -19,10 +19,10 @@ func newRouter() *router {
 	return r
 }
 
-func (r *router) addRouter(method string, path string, handler ...HandlerFunc) {
+func (r *router) addRouter(method string, path string, handlers HandlerChain) {
 	log.Printf("router: %s - %s", method, path)
 
-	r.tree[method].insert(path, handler)
+	r.tree[method].insert(path, handlers)
 }
 
 func (r *router) handle(c *Context) {
