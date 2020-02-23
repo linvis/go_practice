@@ -9,18 +9,20 @@ type Context struct {
 	Writer http.ResponseWriter
 	Req    *http.Request
 
+	index    int
+	handlers HandlerChain
+
 	Method     string
 	Path       string
 	StatusCode int
-	ParamMap   map[string]string
+	Params     map[string]string
 }
 
 func newContext(w http.ResponseWriter, req *http.Request) *Context {
 	return &Context{
 		Writer: w,
 		Req:    req,
-		Method: req.Method,
-		Path:   req.URL.Path,
+		index:  -1,
 	}
 }
 
@@ -34,7 +36,7 @@ func (c *Context) SetHeader(key string, value string) {
 }
 
 func (c *Context) Param(key string) string {
-	return c.ParamMap[key]
+	return c.Params[key]
 }
 
 func (c *Context) String(code int, s string) {
@@ -61,4 +63,12 @@ func (c *Context) HTML(code int, html string) {
 	c.Status(code)
 	c.SetHeader("Content-Type", "text/html")
 	c.Writer.Write([]byte(html))
+}
+
+func (c *Context) Next() {
+	c.index++
+	for c.index < len(c.handlers) {
+		c.handlers[c.index](c)
+		c.index++
+	}
 }

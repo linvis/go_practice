@@ -24,18 +24,3 @@ func (r *router) addRouter(method string, path string, handlers HandlerChain) {
 
 	r.tree[method].insert(path, handlers)
 }
-
-func (r *router) handle(c *Context) {
-
-	n := r.tree[c.Method].search(c.Path)
-	if n == nil {
-		log.Printf("no path")
-		return
-	}
-
-	c.ParamMap = n.param
-
-	for _, handler := range n.handlers {
-		handler(c)
-	}
-}

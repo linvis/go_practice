@@ -1,6 +1,7 @@
 package goweb
 
 import (
+	"log"
 	"net/http"
 )
 
@@ -29,18 +30,44 @@ func New() *Engine {
 }
 
 func (engine *Engine) Group(path string, handlers ...HandlerFunc) *RouterGroup {
-	return &RouterGroup{
+	group := &RouterGroup{
 		Base:     path,
-		Handlers: handlers,
+		Handlers: HandlerChain{},
 		engine:   engine,
 	}
+
+	// global middleware
+	if len(engine.Handlers) > 0 {
+		group.Handlers = append(group.Handlers, engine.Handlers...)
+	}
+
+	group.Handlers = append(group.Handlers, handlers...)
+
+	return group
+}
+
+func (engine *Engine) handleHTTPRequest(c *Context) {
+	method := c.Req.Method
+	path := c.Req.URL.Path
+
+	node := engine.router.tree[method].search(path)
+	if node == nil {
+		log.Printf("no path")
+		return
+	}
+
+	c.Method = method
+	c.Path = path
+	c.Params = node.param
+	c.handlers = node.handlers
+	c.Next()
 }
 
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	engine.ctx = newContext(w, req)
 
-	engine.router.handle(engine.ctx)
+	engine.handleHTTPRequest(engine.ctx)
 }
 
 func (engine *Engine) Run(addr string) {

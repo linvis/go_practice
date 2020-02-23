@@ -35,3 +35,7 @@ func (group *RouterGroup) GET(path string, handlers ...HandlerFunc) {
 
 	group.engine.router.addRouter("GET", path, handlers)
 }
+
+func (group *RouterGroup) Use(handlers ...HandlerFunc) {
+	group.Handlers = append(group.Handlers, handlers...)
+}

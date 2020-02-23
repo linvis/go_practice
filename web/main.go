@@ -34,6 +34,8 @@ func html(c *goweb.Context) {
 func main() {
 	engine := goweb.New()
 
+	engine.Use(goweb.Logger())
+
 	engine.GET("/", home)
 	engine.GET("/hello", hello)
 	engine.GET("/html", html)
