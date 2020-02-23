@@ -1,5 +1,10 @@
 package goweb
 
+import (
+	"net/http"
+	"path"
+)
+
 type RouterGroup struct {
 	Base     string
 	engine   *Engine
@@ -38,4 +43,26 @@ func (group *RouterGroup) GET(path string, handlers ...HandlerFunc) {
 
 func (group *RouterGroup) Use(handlers ...HandlerFunc) {
 	group.Handlers = append(group.Handlers, handlers...)
+}
+
+func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileSystem) HandlerFunc {
+	absPath := path.Join(group.Base, relativePath)
+	fileServer := http.StripPrefix(absPath, http.FileServer(fs))
+	return func(c *Context) {
+		file := c.Param("filepath")
+
+		if _, err := fs.Open(file); err != nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+
+		fileServer.ServeHTTP(c.Writer, c.Req)
+	}
+}
+
+func (group *RouterGroup) Static(relativePath string, root string) {
+	handler := group.createStaticHandler(relativePath, http.Dir(root))
+	urlPattern := path.Join(relativePath, "/*filepath")
+
+	group.GET(urlPattern, handler)
 }

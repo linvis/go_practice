@@ -6,10 +6,7 @@ import (
 )
 
 func home(c *goweb.Context) {
-	// c.String(http.StatusOK, "hello world")
-	c.JSON(http.StatusOK, map[string]int{
-		"hello": 1,
-	})
+	c.HTML(http.StatusOK, "index.html", nil)
 }
 
 func hello(c *goweb.Context) {
@@ -28,13 +25,15 @@ func getFile(c *goweb.Context) {
 }
 
 func html(c *goweb.Context) {
-	c.HTML(http.StatusOK, "<h1>Hello world</h1>")
+	c.HTML(http.StatusOK, "", "<h1>Hello world</h1>")
 }
 
 func main() {
 	engine := goweb.New()
 
 	engine.Use(goweb.Logger())
+	engine.LoadHTMLGlob("static/*.html")
+	engine.Static("/static", "./static")
 
 	engine.GET("/", home)
 	engine.GET("/hello", hello)

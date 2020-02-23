@@ -9,6 +9,7 @@ type Context struct {
 	Writer http.ResponseWriter
 	Req    *http.Request
 
+	engine   *Engine
 	index    int
 	handlers HandlerChain
 
@@ -16,14 +17,6 @@ type Context struct {
 	Path       string
 	StatusCode int
 	Params     map[string]string
-}
-
-func newContext(w http.ResponseWriter, req *http.Request) *Context {
-	return &Context{
-		Writer: w,
-		Req:    req,
-		index:  -1,
-	}
 }
 
 func (c *Context) Status(code int) {
@@ -59,10 +52,12 @@ func (c *Context) Query(key string) string {
 	return c.Req.URL.Query().Get(key)
 }
 
-func (c *Context) HTML(code int, html string) {
+func (c *Context) HTML(code int, name string, data interface{}) {
 	c.Status(code)
 	c.SetHeader("Content-Type", "text/html")
-	c.Writer.Write([]byte(html))
+	if err := c.engine.htmlTemplates.ExecuteTemplate(c.Writer, name, data); err != nil {
+		return
+	}
 }
 
 func (c *Context) Next() {

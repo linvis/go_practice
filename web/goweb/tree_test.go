@@ -13,15 +13,15 @@ func TestTreeInsert(t *testing.T) {
 
 	root := initTree()
 
-	root.insert("/hello", HandlerChain{fakeHandler})
+	root.insert("/", HandlerChain{fakeHandler})
 	root.insert("/he/ha/hb", HandlerChain{fakeHandler})
 	root.insert("/he/ha/ff", HandlerChain{fakeHandler})
 	root.insert("/he/:name", HandlerChain{fakeHandler})
-	root.insert("/he/*namefile", HandlerChain{fakeHandler})
+	root.insert("/static/*filepath", HandlerChain{fakeHandler})
 
 	// ans := root.search("/hello")
 	ans := root.search("/he/aaa")
 	t.Log(ans)
-	ans = root.search("/he/bob/info.html")
+	ans = root.search("/static/js/info.js")
 	t.Log(ans)
 }

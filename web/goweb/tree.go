@@ -5,13 +5,12 @@ import (
 )
 
 type node struct {
-	path string
-	isWild bool
-	isEnd bool
+	path     string
+	isWild   bool
+	isEnd    bool
 	children []*node
 	handlers HandlerChain
 }
-
 
 func initTree() *node {
 	return &node{}
@@ -37,7 +36,7 @@ func findWildcard(path string) (string, int, bool) {
 		}
 
 		valid = true
-		for end := i+1; end < len(path); end++ {
+		for end := i + 1; end < len(path); end++ {
 			if path[end] == '/' {
 				return path[i:end], i, valid
 			}
@@ -75,9 +74,9 @@ func (n *node) insertChild(path string, handlers HandlerChain) {
 		n.children = []*node{}
 
 		child := &node{
-			path : wild,
-			children : []*node{},
-			isWild: true,
+			path:     wild,
+			children: []*node{},
+			isWild:   true,
 		}
 		n.children = append(n.children, child)
 		n = child
@@ -87,12 +86,11 @@ func (n *node) insertChild(path string, handlers HandlerChain) {
 		n.isWild = true
 	}
 
-
-	if idx + len(wild) < len(path) {
+	if idx+len(wild) < len(path) {
 		child := &node{
-			path: path[idx+len(wild):],
-			children : []*node{},
-			isEnd: true,
+			path:     path[idx+len(wild):],
+			children: []*node{},
+			isEnd:    true,
 			handlers: handlers,
 		}
 		n.children = append(n.children, child)
@@ -117,16 +115,16 @@ LOOP:
 	for {
 		i := longestCommonPrefix(n.path, path)
 
-		// split 
+		// split
 		// update current node's path to prefix
 		// insert reset as a child
-		if (i < len(n.path)) {
+		if i < len(n.path) {
 			child := node{
-				path : n.path[i:],
-				isWild: n.isWild,
+				path:     n.path[i:],
+				isWild:   n.isWild,
 				children: n.children,
 				handlers: n.handlers,
-				isEnd: n.isEnd,
+				isEnd:    n.isEnd,
 			}
 
 			n.children = []*node{&child}
@@ -151,13 +149,14 @@ LOOP:
 		}
 
 		n.handlers = append(n.handlers, handlers...)
+		n.isEnd = true
 		return
 	}
 }
 
 type nodeInfo struct {
 	handlers HandlerChain
-	param map[string]string
+	param    map[string]string
 }
 
 func (n *node) search(path string) *nodeInfo {
@@ -181,7 +180,7 @@ func (n *node) search(path string) *nodeInfo {
 		if len(path) <= 0 && n.isEnd {
 			return &nodeInfo{
 				handlers: n.handlers,
-				param: paramMap,
+				param:    paramMap,
 			}
 		}
 	} else {
@@ -198,7 +197,7 @@ func (n *node) search(path string) *nodeInfo {
 			if n.isEnd {
 				return &nodeInfo{
 					handlers: n.handlers,
-					param: paramMap,
+					param:    paramMap,
 				}
 			} else {
 				return nil
