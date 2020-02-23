@@ -9,6 +9,7 @@ func TestAddRouter(t *testing.T) {
 	r.addRouter("GET", "/hello", nil)
 	r.addRouter("GET", "/he", nil)
 	r.addRouter("GET", "/he/:name", nil)
+	r.addRouter("GET", "/he/*file", nil)
 
 	t.Log(r)
 }

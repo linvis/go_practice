@@ -22,6 +22,11 @@ func login(c *goweb.Context) {
 	c.String(http.StatusOK, name)
 }
 
+func getFile(c *goweb.Context) {
+	name := c.Param("file")
+	c.String(http.StatusOK, name)
+}
+
 func html(c *goweb.Context) {
 	c.HTML(http.StatusOK, "<h1>Hello world</h1>")
 }
@@ -32,7 +37,7 @@ func main() {
 	engine.GET("/", home)
 	engine.GET("/hello", hello)
 	engine.GET("/html", html)
-	engine.GET("/login/:name", login)
+	engine.GET("/getfile/*file", getFile)
 
 	engine.Run(":4000")
 }
