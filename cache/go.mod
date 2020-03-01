@@ -1,3 +1,3 @@
-module gocache
+module cache
 
 go 1.13
