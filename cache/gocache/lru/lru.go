@@ -1,4 +1,4 @@
-package gocache
+package lru
 
 import (
 	"container/list"
@@ -6,27 +6,34 @@ import (
 	"unsafe"
 )
 
-type LRUCache struct {
+type Cache struct {
 	cache   map[string]*list.Element
 	maxByte int64
 	nbytes  int64
 	list    *list.List
 }
 
-type entry struct {
-	key   string
-	value interface{}
+type Value interface {
+	Len() int
 }
 
-func NewLRUCache(maxByte int64) *LRUCache {
-	return &LRUCache{
+type entry struct {
+	key   string
+	value Value
+}
+
+var CacheErrorNotExist = errors.New("cache key not exist")
+var CacheErrorEmpty = errors.New("cache empty")
+
+func New(maxByte int64) *Cache {
+	return &Cache{
 		cache:   make(map[string]*list.Element),
 		maxByte: maxByte,
 		list:    list.New(),
 	}
 }
 
-func (c *LRUCache) Add(key string, val interface{}) {
+func (c *Cache) Add(key string, val Value) {
 	ele, ok := c.cache[key]
 	if ok {
 		entry := ele.Value.(*entry)
@@ -50,7 +57,7 @@ func (c *LRUCache) Add(key string, val interface{}) {
 	c.cache[key] = newEle
 }
 
-func (c *LRUCache) Front() (interface{}, error) {
+func (c *Cache) Front() (Value, error) {
 	if c.Len() <= 0 {
 		return nil, errors.New("empty cache")
 	}
@@ -58,7 +65,7 @@ func (c *LRUCache) Front() (interface{}, error) {
 	return c.list.Front().Value.(*entry).value, nil
 }
 
-func (c *LRUCache) Back() (interface{}, error) {
+func (c *Cache) Back() (Value, error) {
 	if c.Len() <= 0 {
 		return nil, errors.New("empty cache")
 	}
@@ -66,7 +73,7 @@ func (c *LRUCache) Back() (interface{}, error) {
 	return c.list.Back().Value.(*entry).value, nil
 }
 
-func (c *LRUCache) Get(key string) (interface{}, error) {
+func (c *Cache) Get(key string) (Value, error) {
 	ele, ok := c.cache[key]
 	if !ok {
 		return nil, CacheErrorNotExist
@@ -77,7 +84,7 @@ func (c *LRUCache) Get(key string) (interface{}, error) {
 	return ele.Value.(*entry).value, nil
 }
 
-func (c *LRUCache) Delete(key string) error {
+func (c *Cache) Delete(key string) error {
 	ele, ok := c.cache[key]
 	if !ok {
 		return CacheErrorNotExist
@@ -91,14 +98,14 @@ func (c *LRUCache) Delete(key string) error {
 	return nil
 }
 
-func (c *LRUCache) Len() int {
+func (c *Cache) Len() int {
 	return c.list.Len()
 }
 
-func (c *LRUCache) Size() int64 {
+func (c *Cache) Size() int64 {
 	return c.nbytes
 }
 
-func (c *LRUCache) Free() int64 {
+func (c *Cache) Free() int64 {
 	return c.maxByte - c.nbytes
 }

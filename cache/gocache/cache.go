@@ -2,6 +2,7 @@ package gocache
 
 import (
 	"errors"
+	"gocache/lru"
 	"sync"
 )
 
@@ -11,7 +12,7 @@ var CacheErrorEmpty = errors.New("cache empty")
 type Cache struct {
 	mutex   sync.Mutex
 	maxByte int64
-	cache   *LRUCache
+	cache   *lru.Cache
 }
 
 func NewCache(maxByte int64) *Cache {
@@ -20,11 +21,11 @@ func NewCache(maxByte int64) *Cache {
 	}
 }
 
-func (c *Cache) Add(key string, val interface{}) {
+func (c *Cache) Add(key string, val ByteView) {
 	c.mutex.Lock()
 
 	if c.cache == nil {
-		c.cache = NewLRUCache(c.maxByte)
+		c.cache = lru.New(c.maxByte)
 	}
 
 	c.cache.Add(key, val)
@@ -32,9 +33,11 @@ func (c *Cache) Add(key string, val interface{}) {
 	c.mutex.Unlock()
 }
 
-func (c *Cache) Get(key string) (interface{}, error) {
+func (c *Cache) Get(key string) (ByteView, error) {
 	if c.cache == nil {
-		return nil, CacheErrorEmpty
+		return ByteView{}, CacheErrorEmpty
 	}
-	return c.cache.Get(key)
+	v, err := c.cache.Get(key)
+
+	return v.(ByteView), err
 }
