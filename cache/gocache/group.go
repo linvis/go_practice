@@ -1,6 +1,12 @@
 package gocache
 
-import "sync"
+import (
+	"sync"
+
+	pb "gocache/gocachepb"
+
+	"github.com/golang/groupcache/singleflight"
+)
 
 type GroupCallback func(key string) ([]byte, error)
 
@@ -9,6 +15,7 @@ type Group struct {
 	callback GroupCallback
 	cache    *Cache
 	peers    PeerPicker
+	loader   *singleflight.Group
 }
 
 type groupPool struct {
@@ -25,6 +32,7 @@ func NewGroup(name string, size int64, callback GroupCallback) *Group {
 		Name:     name,
 		callback: callback,
 		cache:    NewCache(size),
+		loader:   &singleflight.Group{},
 	}
 
 	pool.mutex.Lock()
@@ -59,14 +67,31 @@ func (g *Group) loadFromLocal(key string) (ByteView, error) {
 }
 
 func (g *Group) load(key string) (ByteView, error) {
-	if g.peers != nil {
-		peer, err := g.peers.PeerPick(key)
-		if err == nil {
-			return g.GetFromPeer(peer, key)
-		}
-	}
+	// if g.peers != nil {
+	// 	peer, err := g.peers.PeerPick(key)
+	// 	if err == nil {
+	// 		return g.GetFromPeer(peer, key)
+	// 	}
+	// }
 
-	return g.loadFromLocal(key)
+	// return g.loadFromLocal(key)
+
+	view, err := g.loader.Do(key, func() (interface{}, error) {
+		if g.peers != nil {
+			peer, err := g.peers.PeerPick(key)
+			if err == nil {
+				return g.GetFromPeer(peer, key)
+			}
+		}
+
+		return g.loadFromLocal(key)
+	})
+
+	if err == nil {
+		return view.(ByteView), nil
+	} else {
+		return ByteView{}, nil
+	}
 }
 
 func GetGroup(name string) *Group {
@@ -91,9 +116,15 @@ func (g *Group) RegisterPeer(peers PeerPicker) {
 }
 
 func (g *Group) GetFromPeer(peer PeerGetter, key string) (ByteView, error) {
-	bytes, err := peer.Get(g.Name, key)
+	req := &pb.Request{
+		Group: g.Name,
+		Key:   key,
+	}
+	res := &pb.Response{}
+
+	err := peer.Get(req, res)
 	if err != nil {
 		return ByteView{}, err
 	}
-	return ByteView{b: bytes}, nil
+	return ByteView{b: res.Value}, nil
 }

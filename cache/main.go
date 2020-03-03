@@ -15,7 +15,6 @@ var testMap = map[string]string{
 
 func createGroup() *gocache.Group {
 	return gocache.NewGroup("test", 200, func(key string) ([]byte, error) {
-		fmt.Println("hit")
 		return []byte(testMap[key]), nil
 	})
 }
@@ -31,7 +30,6 @@ func startAPIServer(apiAddr string, group *gocache.Group) {
 	http.Handle("/api", http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			key := r.URL.Query().Get("key")
-			fmt.Println(key)
 			view, err := group.Get(key)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -52,8 +50,6 @@ func main() {
 	flag.IntVar(&port, "port", 8001, "Geecache server port")
 	flag.BoolVar(&api, "api", false, "Start a api server?")
 	flag.Parse()
-
-	fmt.Println(port, api)
 
 	apiAddr := "http://localhost:9999"
 	addrMap := map[int]string{

@@ -4,10 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"gocache/consistenthash"
+	pb "gocache/gocachepb"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
+
+	"github.com/golang/protobuf/proto"
 )
 
 const basePath = "/gocache"
@@ -40,7 +44,6 @@ func (h *HTTPPool) Set(peers ...string) {
 func (h *HTTPPool) PeerPick(key string) (PeerGetter, error) {
 	peer := h.peers.Get(key)
 
-	fmt.Println("peer ", peer)
 	if peer == h.self {
 		return nil, errors.New("request self")
 	}
@@ -70,15 +73,17 @@ func (s *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	v, err := g.Get(pathes[3])
+	view, err := g.Get(pathes[3])
 	if err != nil {
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
 
+	body, err := proto.Marshal(&pb.Response{Value: view.ByteSlice()})
+
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.WriteHeader(http.StatusOK)
-	w.Write(v.b)
+	w.Write(body)
 }
 
 func NewHTTPPool() *HTTPPool {
@@ -97,30 +102,34 @@ type httpGetter struct {
 	baseURL string
 }
 
-func (h *httpGetter) Get(group string, key string) ([]byte, error) {
+func (h *httpGetter) Get(in *pb.Request, out *pb.Response) error {
 	url := fmt.Sprintf(
 		"%v/%v/%v",
 		h.baseURL,
-		group,
-		key,
+		url.QueryEscape(in.GetGroup()),
+		url.QueryEscape(in.GetKey()),
 	)
 
-	fmt.Println("request ", url)
+	fmt.Println("request peer  ", url)
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("bad request %d", resp.StatusCode)
+		return fmt.Errorf("bad request %d", resp.StatusCode)
 	}
 
 	bytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return bytes, nil
+	if err = proto.Unmarshal(bytes, out); err != nil {
+		return err
+	}
+
+	return nil
 }
